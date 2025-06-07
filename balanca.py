@@ -4,6 +4,7 @@ import time
 import re
 import json, os
 import argparse
+import sys
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -18,13 +19,12 @@ PORTA_SERIAL = 'COM6'
 BAUDRATE = 9600
 TIMEOUT = 1
 
+def get_config_path():
+    pasta = os.path.join(os.getenv("APPDATA"), "BalancaAPI")
+    os.makedirs(pasta, exist_ok=True)
+    return os.path.join(pasta, "config.json")
 
-CONFIG_FILE = "config.json"
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--settings", action="store_true", help="Abrir tela de configurações")
-args = parser.parse_args()
-mostrar_tela_manual = args.settings
+CONFIG_FILE = get_config_path()
 
 def carregar_config():
     if not os.path.isfile(CONFIG_FILE):
@@ -92,12 +92,16 @@ def get_peso():
         return jsonify({"peso": peso_atual})
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--settings", action="store_true", help="Abrir tela de configurações")
+    args = parser.parse_args()
+    
     cfg = carregar_config()
-    if cfg is None or mostrar_tela_manual:     # ver passo 2 para a flag
+    if cfg is None or args.settings:     # ver passo 2 para a flag
         from settings_gui import abrir_tela_config
         porta, baud = abrir_tela_config()
         if porta is None:
-            exit(0)  # usuário fechou sem salvar
+            sys.exit(0)  # usuário fechou sem salvar
         salvar_config(porta, baud)
         cfg = {"PORTA_SERIAL": porta, "BAUDRATE": baud}
 
